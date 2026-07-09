@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Agenda con recordatorio 15 minutos antes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e9edf2 100%);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.8rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      padding: 1.6rem;
+      transition: 0.2s;
+    }
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-left: 5px solid #f97316;
+      padding-left: 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1.2rem;
+      align-items: center;
+    }
+
+    input, button {
+      border-radius: 2rem;
+      border: none;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    input {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #f97316;
+      box-shadow: 0 0 0 2px rgba(249,115,22,0.2);
+    }
+
+    button {
+      background: #f97316;
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #ea580c;
+      transform: scale(0.97);
+    }
+
+    .activity-list {
+      list-style: none;
+      margin-top: 1rem;
+      max-height: 450px;
+      overflow-y: auto;
+    }
+
+    .activity-item {
+      background: #fef9f2;
+      border-radius: 1.2rem;
+      padding: 0.8rem 1rem;
+      margin-bottom: 0.7rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      border-left: 4px solid #f97316;
+    }
+
+    .activity-info {
+      flex: 2;
+    }
+
+    .activity-desc {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .activity-datetime {
+      font-size: 0.75rem;
+      color: #6c757d;
+    }
+
+    .reminder-status {
+      font-size: 0.7rem;
+      background: #ffedd5;
+      padding: 0.2rem 0.6rem;
+      border-radius: 1rem;
+      display: inline-block;
+      margin-top: 0.2rem;
+    }
+
+    .completed {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+
+    .item-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .item-actions button {
+      padding: 0.3rem 0.7rem;
+      font-size: 0.7rem;
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+
+    .danger-btn {
+      background: #ef4444;
+      color: white;
+    }
+
+    .danger-btn:hover {
+      background: #dc2626;
+    }
+
+    .reminders-list {
+      list-style: none;
+      margin-top: 1rem;
+    }
+
+    .reminder-item {
+      background: #eef2ff;
+      border-radius: 1rem;
+      padding: 0.7rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      background: #f97316;
+      color: white;
+      border-radius: 2rem;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+
+    .empty-msg {
+      text-align: center;
+      color: #6c757d;
+      padding: 1.5rem;
+      font-style: italic;
+    }
+
+    footer {
+      grid-column: span 2;
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #334155;
+    }
+
+    @media (max-width: 800px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      footer {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- AGENDA: Agregar y listar actividades -->
+  <div class="card">
+    <h2>📋 Agenda diaria</h2>
+    <div class="form-group">
+      <input type="date" id="activityDate" style="flex:1">
+      <input type="time" id="activityTime" step="60" style="flex:1">
+      <input type="text" id="activityDesc" placeholder="Ej: Reunión con cliente" style="flex:2">
+      <button id="addActivityBtn">➕ Agregar</button>
+    </div>
+    <div style="margin: 0.5rem 0 0.5rem 0;">
+      <label>🔍 Filtrar por fecha: </label>
+      <input type="date" id="filterDate" style="width: auto; display: inline-block; margin-left: 0.5rem;">
+    </div>
+    <ul id="activityList" class="activity-list">
+      <li class="empty-msg">No hay actividades. Agrega una con fecha y hora.</li>
+    </ul>
+  </div>
+
+  <!-- PRÓXIMOS RECORDATORIOS (15 min antes) -->
+  <div class="card">
+    <h2>⏰ Próximos recordatorios</h2>
+    <p style="font-size: 0.8rem; margin-bottom: 0.8rem;">⏱️ Se te avisará <strong>15 minutos antes</strong> de cada actividad.</p>
+    <ul id="remindersList" class="reminders-list">
+      <li class="empty-msg">No hay recordatorios pendientes.</li>
+    </ul>
+    <small style="display:block; margin-top: 1rem;">🔔 Permiso de notificaciones necesario. El sistema comprueba cada 30s.</small>
+  </div>
+  <footer>💾 Datos guardados en tu navegador • Los recordatorios se activan 15 minutos antes exactos.</footer>
+</div>
+
+<script>
+  // ---------- ESTRUCTURA DE DATOS ----------
+  // activities = [ { id, date (YYYY-MM-DD), time (HH:MM), description, completed, reminderSent (bool) } ]
+  let activities = [];
+  const STORAGE_KEY = 'activitiesWithReminder';
+
+  // Elementos DOM
+  const activityDate = document.getElementById('activityDate');
+  const activityTime = document.getElementById('activityTime');
+  const activityDesc = document.getElementById('activityDesc');
+  const addBtn = document.getElementById('addActivityBtn');
+  const activityListEl = document.getElementById('activityList');
+  const remindersListEl = document.getElementById('remindersList');
+  const filterDateInput = document.getElementById('filterDate');
+
+  // ---------- NOTIFICACIONES Y SONIDO ----------
+  let notificationsGranted = false;
+
+  function requestNotificationPermission() {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        notificationsGranted = true;
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(perm => {
+          notificationsGranted = (perm === 'granted');
+        });
+      }
+    }
+  }
+
+  function playBeep() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.frequency.value = 880;
+      gainNode.gain.value = 0.2;
+      oscillator.type = 'sine';
+      oscillator.start();
+      gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.6);
+      oscillator.stop(audioCtx.currentTime + 0.6);
+    } catch(e) { console.warn("Beep no soportado"); }
+  }
+
+  function showReminderNotification(activity) {
+    const title = `⏰ Recordatorio: ${activity.description}`;
+    const body = `Tu actividad es a las ${activity.time} del ${activity.date}. ¡Prepárate!`;
+    if (notificationsGranted && 'Notification' in window) {
+      new Notification(title, { body, icon: 'https://cdn-icons-png.flaticon.com/512/1995/1995572.png' });
+    } else {
+      alert(`🔔 ${title}\n${body}`);
+    }
+    playBeep();
+  }
+
+  // ---------- PERSISTENCIA ----------
+  function saveToLocalStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
+  }
+
+  function loadFromLocalStorage() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      activities = JSON.parse(stored);
+      // Asegurar que cada actividad tenga el campo reminderSent (para versiones antiguas)
+      activities = activities.map(act => ({ ...act, reminderSent: act.reminderSent || false }));
+    } else {
+      activities = [];
+    }
+  }
+
+  // ---------- FUNCIONES AUXILIARES ----------
+  function getActivityDateTime(act) {
+    // Retorna objeto Date con la fecha y hora exactas de la actividad
+    return new Date(`${act.date}T${act.time}:00`);
+  }
+
+  function getReminderTime(act) {
+    // Devuelve la fecha/hora en la que se debe recordar (15 min antes)
+    const activityDate = getActivityDateTime(act);
+    return new Date(activityDate.getTime() - 15 * 60 * 1000);
+  }
+
+  // Verificar y disparar recordatorios (llamado periódicamente)
+  function checkReminders() {
+    const now = new Date();
+    let updated = false;
+
+    for (let i = 0; i < activities.length; i++) {
+      const act = activities[i];
+      // No recordar si ya está completada o ya se envió el recordatorio
+      if (act.completed || act.reminderSent) continue;
+
+      const reminderTime = getReminderTime(act);
+      const activityTimeDate = getActivityDateTime(act);
+
+      // Si la actividad ya pasó, no recordar (marcar como recordatorio enviado para no intentar)
+      if (activityTimeDate <= now) {
+        act.reminderSent = true;
+        updated = true;
+        continue;
+      }
+
+      // Si la hora actual es mayor o igual a la hora del recordatorio (con margen de 1 minuto para no fallar)
+      // y aún no se ha enviado, se envía.
+      if (reminderTime <= now && !act.reminderSent) {
+        showReminderNotification(act);
+        act.reminderSent = true;
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      saveToLocalStorage();
+      renderActivities();     // Actualizar lista de actividades (estado reminderSent)
+      renderRemindersList(); // Actualizar lista de próximos recordatorios
+    }
+  }
+
+  // ---------- RENDER ACTIVIDADES (con filtro de fecha) ----------
+  let currentFilter = "";
+
+  function renderActivities() {
+    const filterDate = filterDateInput.value;
+    currentFilter = filterDate;
+    let filtered = [...activities];
+    if (filterDate) {
+      filtered = filtered.filter(act => act.date === filterDate);
+    }
+    // Ordenar por fecha y hora
+    filtered.sort((a,b) => {
+      const da = getActivityDateTime(a);
+      const db = getActivityDateTime(b);
+      return da - db;
+    });
+
+    if (filtered.length === 0) {
+      activityListEl.innerHTML = '<li class="empty-msg">📭 No hay actividades para esta fecha.</li>';
+      return;
+    }
+
+    activityListEl.innerHTML = '';
+    filtered.forEach(act => {
+      const li = document.createElement('li');
+      li.className = `activity-item ${act.completed ? 'completed' : ''}`;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'activity-info';
+      infoDiv.innerHTML = `
+        <div class="activity-desc">${escapeHtml(act.description)}</div>
+        <div class="activity-datetime">📅 ${act.date}  🕒 ${act.time}</div>
+        <div class="reminder-status">${act.reminderSent ? '🔔 Recordatorio enviado' : '⏳ Recordatorio pendiente (15 min antes)'}</div>
+      `;
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'item-actions';
+
+      const toggleCompleteBtn = document.createElement('button');
+      toggleCompleteBtn.textContent = act.completed ? '↺ Activar' : '✓ Completar';
+      toggleCompleteBtn.style.background = act.completed ? '#eab308' : '#22c55e';
+      toggleCompleteBtn.addEventListener('click', () => {
+        act.completed = !act.completed;
+        // Si se marca como completada, ya no debe recordar
+        if (act.completed) act.reminderSent = true;
+        saveToLocalStorage();
+        renderActivities();
+        renderRemindersList();
+      });
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = '✏️ Editar';
+      editBtn.addEventListener('click', () => {
+        const newDesc = prompt('Editar descripción:', act.description);
+        if (newDesc && newDesc.trim()) act.description = newDesc.trim();
+        const newDate = prompt('Editar fecha (YYYY-MM-DD):', act.date);
+        if (newDate && /^\d{4}-\d{2}-\d{2}$/.test(newDate)) act.date = newDate;
+        const newTime = prompt('Editar hora (HH:MM):', act.time);
+        if (newTime && /^([0-1]\d|2[0-3]):[0-5]\d$/.test(newTime)) act.time = newTime;
+        // Al editar, resetear reminderSent para que pueda volver a enviarse si la nueva hora es futura
+        act.reminderSent = false;
+        if (act.completed) act.completed = false; // Al editar, desmarcar completado
+        saveToLocalStorage();
+        renderActivities();
+        renderRemindersList();
+      });
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '🗑️ Eliminar';
+      deleteBtn.classList.add('danger-btn');
+      deleteBtn.addEventListener('click', () => {
+        if (confirm('¿Eliminar actividad?')) {
+          activities = activities.filter(a => a.id !== act.id);
+          saveToLocalStorage();
+          renderActivities();
+          renderRemindersList();
+        }
+      });
+
+      actionsDiv.appendChild(toggleCompleteBtn);
+      actionsDiv.appendChild(editBtn);
+      actionsDiv.appendChild(deleteBtn);
+      li.appendChild(infoDiv);
+      li.appendChild(actionsDiv);
+      activityListEl.appendChild(li);
+    });
+  }
+
+  // Renderizar lista de recordatorios próximos (los que se van a activar en las próximas 24h)
+  function renderRemindersList() {
+    const now = new Date();
+    const upcoming = [];
+    for (const act of activities) {
+      if (act.completed || act.reminderSent) continue;
+      const reminderTime = getReminderTime(act);
+      if (reminderTime > now) {
+        // Mostrar solo los que faltan menos de 24h para el recordatorio (opcional)
+        const diffMs = reminderTime - now;
+        if (diffMs <= 24 * 60 * 60 * 1000) {
+          upcoming.push({ ...act, reminderTime });
+        }
+      }
+    }
+    upcoming.sort((a,b) => a.reminderTime - b.reminderTime);
+
+    if (upcoming.length === 0) {
+      remindersListEl.innerHTML = '<li class="empty-msg">✅ No hay recordatorios pendientes próximos.</li>';
+      return;
+    }
+
+    remindersListEl.innerHTML = '';
+    for (const act of upcoming) {
+      const diffMin = Math.round((act.reminderTime - now) / 60000);
+      const li = document.createElement('li');
+      li.className = 'reminder-item';
+      li.innerHTML = `
+        <div>
+          <strong>${escapeHtml(act.description)}</strong><br>
+          <small>Actividad: ${act.date} a las ${act.time}</small><br>
+          <span class="badge">Recordatorio en ${diffMin} minutos</span>
+        </div>
+      `;
+      remindersListEl.appendChild(li);
+    }
+  }
+
+  // Agregar nueva actividad
+  function addActivity() {
+    const date = activityDate.value;
+    const time = activityTime.value;
+    const desc = activityDesc.value.trim();
+
+    if (!date || !time) {
+      alert('Por favor selecciona fecha y hora.');
+      return;
+    }
+    if (!desc) {
+      alert('Escribe una descripción para la actividad.');
+      return;
+    }
+
+    // Validar que la fecha+hora no sea muy antigua (opcional advertencia)
+    const activityMoment = new Date(`${date}T${time}:00`);
+    if (activityMoment < new Date()) {
+      if (!confirm('La actividad está en el pasado. ¿Deseas agregarla igualmente? No se enviará recordatorio.')) {
+        return;
+      }
+    }
+
+    const newActivity = {
+      id: Date.now() + Math.random(),
+      date: date,
+      time: time,
+      description: desc,
+      completed: false,
+      reminderSent: false
+    };
+    activities.push(newActivity);
+    saveToLocalStorage();
+    // Limpiar campos, pero mantener fecha y hora para siguiente ingreso
+    activityDesc.value = '';
+    // Opcional: mantener fecha y hora actuales
+    renderActivities();
+    renderRemindersList();
+
+    // Si la actividad ya está en el pasado, marcar reminderSent como true para no intentar notificar
+    if (activityMoment <= new Date()) {
+      newActivity.reminderSent = true;
+      saveToLocalStorage();
+      renderActivities();
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      return m;
+    });
+  }
+
+  // Inicializar valores por defecto y eventos
+  function init() {
+    loadFromLocalStorage();
+    // Establecer fecha y hora actual por defecto en los inputs
+    const now = new Date();
+    const today = now.toISOString().slice(0,10);
+    activityDate.value = today;
+    const defaultTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()+1).padStart(2,'0')}`;
+    activityTime.value = defaultTime;
+    filterDateInput.value = "";
+
+    renderActivities();
+    renderRemindersList();
+    requestNotificationPermission();
+
+    addBtn.addEventListener('click', addActivity);
+    filterDateInput.addEventListener('change', () => renderActivities());
+
+    // Verificar alarmas cada 30 segundos
+    setInterval(() => {
+      checkReminders();
+    }, 30000);
+    // Comprobación inicial
+    setTimeout(checkReminders, 500);
+  }
+
+  init();
+</script>
+</body>
+</html>
